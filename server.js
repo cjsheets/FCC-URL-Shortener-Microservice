@@ -17,7 +17,6 @@ http.createServer(function(req, res) {
       parseURL(db, path, function(result){
         db.close();
         if(result.redirect != undefined){
-          console.log(result.redirect)
           var redir = /^http\//.test(result.redirect) ? result.redirect : 'http://' + result.redirect;
           res.writeHead(301, {"Location": redir});
           res.write('Redirecting to ' + result.redirect + '');
@@ -35,12 +34,9 @@ var parseURL = function(db, path, callback) {
   if (/^\/new\//.test(path)) {
     // Add new redirect
     var longURL = path.substr(5), shortURL = '';
-    console.log('Add: ' + longURL);
     if( validator.isURL(longURL) ){
       genURL(db, function(shortURL){
         var insertString = [{shorturl: shortURL, fullurl: longURL},];
-        console.log('Mongo Insert: ')
-        console.log(insertString)
         insertDocument(db, insertString, function(result){
           if (result == null) {
            callback("{error: could not add url}");
@@ -55,11 +51,8 @@ var parseURL = function(db, path, callback) {
   } else {
     // Check for existing redirect
     var longURL = path.substr(1);
-    console.log(longURL);
     if( validator.isAlphanumeric(longURL) ){
       var findString = {shorturl: longURL};
-      console.log('Mongo Find: ')
-      console.log(findString)
       response = findDocument(db, findString, function(result){
         if (result == null) { 
           callback("{error: redirect was not found}");
