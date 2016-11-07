@@ -13,37 +13,63 @@ http.createServer(function(req, res) {
     response = '';
   MongoClient.connect(dbCon, function (err, db) {
     if (err) {
-      console.log('Unable to connect to the mongoDB server. Error:', err);
-      response = "{error: service is temporarally unavailable}";
+      res.end("{error: service is temporarally unavailable}");
     } else {
-      if (/^\/new\//.test(path)) {
-        var URL = path.substr(5);
-        console.log('Add: ' + URL);
-        if( validator.isURL(URL) ){
-          var insertString = [{shorturl: genURL()}];
-          console.log('Mongo: ' + insertString)
-          insertDocument(db, insertString, function(result){
-            console.log('callback: ' + result);
-          })
+      parseURL(db, path, function(result){
+        db.close();
+        if(result.redirect != undefined){
+          console.log(result.redirect)
+          res.writeHead(301, {'Location': result.redirect});
+          res.end();
         } else {
-          response = "{error: url was not valid}";
+          res.end(JSON.stringify(result));
         }
-      } else {
-        var URL = path.substr(1);
-        console.log('Check: ' + URL);
-        if( validator.isAlphanumeric(URL) ){
-          console.log('retrieve from database')
-        } else {
-          response = "{error: redirect is not valid}";
-        }
-    
-      }
-      console.log('Connection established to', url);
-      db.close();
+      });
     }
   });
 }).listen(process.env.PORT || 8080);
 
+var parseURL = function(db, path, callback) {
+  if (/^\/new\//.test(path)) {
+    // Add new redirect
+    var longURL = path.substr(5), shortURL = '';
+    console.log('Add: ' + longURL);
+    if( validator.isURL(longURL) ){
+      genURL(db, function(shortURL){
+        var insertString = [{shorturl: shortURL, fullurl: longURL},];
+        console.log('Mongo Insert: ')
+        console.log(insertString)
+        insertDocument(db, insertString, function(result){
+          if (result == null) {
+           callback("{error: could not add url}");
+          } else {
+           callback("{success: url added, shortUrl: "+shortURL+"}");
+          }
+        });
+      });
+    } else {
+      callback("{error: url was not valid}");
+    }
+  } else {
+    // Check for existing redirect
+    var longURL = path.substr(1);
+    console.log(longURL);
+    if( validator.isAlphanumeric(longURL) ){
+      var findString = {shorturl: longURL};
+      console.log('Mongo Find: ')
+      console.log(findString)
+      response = findDocument(db, findString, function(result){
+        if (result == null) { 
+          callback("{error: redirect was not found}");
+        } else {
+          callback({redirect: result.fullurl});
+        }
+      });
+    } else {
+      callback("{error: redirect is not valid}");
+    }
+  }
+}
 var findDocument = function(db, str, callback) {
   var collection = db.collection('documents');
   collection.findOne(str, function(err, result) {
@@ -58,14 +84,15 @@ var insertDocument = function(db, str, callback) {
   });
 }
 
-var genURL = function() {
-  var url = Math.random().toString(36).slice(2,6);
-  // findDocument(db, url, function(result){
-  //   if(result == '') {
-  //     return url;
-  //   } else {
-  //     return genURL();
-  //   }
-  // });
-  return url;
+var genURL = function(db, callback) {
+  var shortURL = Math.random().toString(36).slice(2,6);
+  var findString = {shorturl: shortURL};
+  findDocument(db, findString, function(result){
+    if (result == null) {
+      callback(shortURL)
+    } else {
+      genURL(db);
+    }
+  });
+  
 }
