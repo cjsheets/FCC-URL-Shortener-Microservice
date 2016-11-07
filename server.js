@@ -18,7 +18,8 @@ http.createServer(function(req, res) {
         db.close();
         if(result.redirect != undefined){
           console.log(result.redirect)
-          res.writeHead(301, {"Location": 'http://www.google.com'});
+          var redir = /^http\//.test(result.redirect) ? result.redirect : 'http://' + result.redirect;
+          res.writeHead(301, {"Location": redir});
           res.write('Redirecting to ' + result.redirect + '');
           res.end();
         } else {
