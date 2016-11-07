@@ -3,10 +3,10 @@ var credential = require('./credential'),
   validator = require('validator'),
   url = require('url'),
   mongodb = require('mongodb'),
-  nodeRes = require('node-res');
+  credential = process.env.mLabCred || credential.mlab();
 
 var MongoClient = mongodb.MongoClient;
-var dbCon = 'mongodb://' + credential.mlab() + '@ds145997.mlab.com:45997/cjs-sandbox';      
+var dbCon = 'mongodb://' + credential + '@ds145997.mlab.com:45997/cjs-sandbox';      
 
 http.createServer(function(req, res) {
   var path = url.parse(req.url, true).path,
@@ -19,9 +19,9 @@ http.createServer(function(req, res) {
         db.close();
         if(result.redirect != undefined){
           console.log(result.redirect)
-          nodeRes.redirect(301, 'http://www.google.com');
-//          res.write('Redirecting to ' + result.redirect + '');
-//          res.end();
+          res.writeHead(301, {"Location": 'http://www.google.com'});
+          res.write('Redirecting to ' + result.redirect + '');
+          res.end();
         } else {
           res.writeHead(200, {'Content-Type': 'text/plain'});
           res.end(JSON.stringify(result));
