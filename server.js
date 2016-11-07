@@ -1,12 +1,11 @@
-var credential = require('./credential'),
+var credential = process.env.mLabCred || require('./credential').mlab(),
   http = require("http"),
   validator = require('validator'),
   url = require('url'),
-  mongodb = require('mongodb'),
-  myCredential = process.env.mLabCred || credential.mlab();
+  mongodb = require('mongodb');
 
 var MongoClient = mongodb.MongoClient;
-var dbCon = 'mongodb://' + myCredential + '@ds145997.mlab.com:45997/cjs-sandbox';      
+var dbCon = 'mongodb://' + credential + '@ds145997.mlab.com:45997/cjs-sandbox';      
 
 http.createServer(function(req, res) {
   var path = url.parse(req.url, true).path,
