@@ -15,9 +15,11 @@ http.createServer(function(req, res) {
       res.end("{error: service is temporarally unavailable}");
     } else {
       parseURL(db, path, function(result){
+        console.log(result)
         db.close();
         if(result.redirect != undefined){
-          var redir = /^http\//.test(result.redirect) ? result.redirect : 'http://' + result.redirect;
+          var redir = /^http/.test(result.redirect) ? result.redirect : 'http://' + result.redirect;
+        console.log(redir);
           res.writeHead(301, {"Location": redir});
           res.write('Redirecting to ' + result.redirect + '');
           res.end();
